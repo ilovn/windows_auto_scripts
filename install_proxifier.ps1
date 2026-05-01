@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
-$url = "https://123static.szxiot.com/Soft/git/Netch.zip"
-$zipPath = "$env:USERPROFILE\Downloads\Netch.zip"
+$url = "https://123static.szxiot.com/Soft/over_firewall/v2rayN-windows-64-desktop.zip"
+$zipPath = "$env:USERPROFILE\Downloads\v2rayN-windows-64-desktop.zip"
 $extractPath = $env:USERPROFILE
 $desktopPath = [Environment]::GetFolderPath("Desktop")
 
@@ -70,21 +70,21 @@ function Get-CdpErrors($prog) {
     }
 }
 
-$extractedFolder = Get-ChildItem -Path $extractPath -Directory | Where-Object { $_.Name -like "*Netch*" } | Select-Object -First 1
+$extractedFolder = Get-ChildItem -Path $extractPath -Directory | Where-Object { $_.Name -like "*v2rayN*" } | Select-Object -First 1
 
 if ($extractedFolder) {
-    Write-Host "Netch is already extracted. Checking configuration..."
-    $exePath = Join-Path $extractedFolder.FullName "Netch.exe"
+    Write-Host "v2rayN is already extracted. Checking configuration..."
+    $exePath = Join-Path $extractedFolder.FullName "v2rayN.exe"
     if (-not (Test-Path $exePath)) {
         $exePath = Get-ChildItem -Path $extractedFolder.FullName -Filter "*.exe" -Recurse | Select-Object -First 1
     }
 
     if ($exePath) {
-        $shortcutPath = "$desktopPath\Netch.lnk"
+        $shortcutPath = "$desktopPath\v2rayN.lnk"
         $needsShortcut = -not (Test-Path $shortcutPath)
 
         if (-not $needsShortcut) {
-            Write-Host "Netch is already configured!" -ForegroundColor Green
+            Write-Host "v2rayN is already configured!" -ForegroundColor Green
             Write-Host "Location: $exePath"
             exit 0
         }
@@ -95,12 +95,12 @@ if ($extractedFolder) {
             $Shortcut = $WshShell.CreateShortcut($shortcutPath)
             $Shortcut.TargetPath = $exePath
             $Shortcut.WorkingDirectory = (Get-Item $exePath).DirectoryName
-            $Shortcut.Description = "Netch"
+            $Shortcut.Description = "v2rayN"
             $Shortcut.Save()
             Write-Host "Desktop shortcut created: $shortcutPath"
         }
 
-        Write-Host "Netch configuration completed!" -ForegroundColor Green
+        Write-Host "v2rayN configuration completed!" -ForegroundColor Green
         Write-Host "Location: $exePath"
     } else {
         Write-Host "Warning: Executable not found in extracted folder" -ForegroundColor Yellow
@@ -108,9 +108,9 @@ if ($extractedFolder) {
     exit 0
 }
 
-Write-Host "Starting Netch download..."
+Write-Host "Starting v2rayN download..."
 if (-not (Test-Path $zipPath)) {
-    Get-CdpErrors -prog "Netch"
+    Get-CdpErrors -prog "v2rayN"
 } else {
     Write-Host "Zip file already exists. Skipping download."
 }
@@ -119,9 +119,9 @@ if (Test-Path $zipPath) {
     Write-Host "Extracting to $extractPath..."
     Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
 
-    $extractedFolder = Get-ChildItem -Path $extractPath -Directory | Where-Object { $_.Name -like "*Netch*" } | Select-Object -First 1
+    $extractedFolder = Get-ChildItem -Path $extractPath -Directory | Where-Object { $_.Name -like "*v2rayN*" } | Select-Object -First 1
     if ($extractedFolder) {
-        $exePath = Join-Path $extractedFolder.FullName "Netch.exe"
+        $exePath = Join-Path $extractedFolder.FullName "v2rayN.exe"
         if (-not (Test-Path $exePath)) {
             $exePath = Get-ChildItem -Path $extractedFolder.FullName -Filter "*.exe" -Recurse | Select-Object -First 1
         }
@@ -129,21 +129,21 @@ if (Test-Path $zipPath) {
         if ($exePath) {
             Write-Host "Creating desktop shortcut..."
             $WshShell = New-Object -ComObject WScript.Shell
-            $Shortcut = $WshShell.CreateShortcut("$desktopPath\Netch.lnk")
+            $Shortcut = $WshShell.CreateShortcut("$desktopPath\v2rayN.lnk")
             $Shortcut.TargetPath = $exePath
             $Shortcut.WorkingDirectory = (Get-Item $exePath).DirectoryName
-            $Shortcut.Description = "Netch"
+            $Shortcut.Description = "v2rayN"
             $Shortcut.Save()
 
-            Write-Host "Netch installed successfully!" -ForegroundColor Green
+            Write-Host "v2rayN installed successfully!" -ForegroundColor Green
             Write-Host "Location: $exePath"
-            Write-Host "Desktop shortcut created: $desktopPath\Netch.lnk"
+            Write-Host "Desktop shortcut created: $desktopPath\v2rayN.lnk"
             Write-Host "Zip file preserved at: $zipPath"
         } else {
             Write-Host "Warning: Executable not found in extracted folder" -ForegroundColor Yellow
         }
     } else {
-        Write-Host "Warning: Could not find Netch folder after extraction" -ForegroundColor Yellow
+        Write-Host "Warning: Could not find v2rayN folder after extraction" -ForegroundColor Yellow
     }
 } else {
     Write-Host "Error: Download failed" -ForegroundColor Red
