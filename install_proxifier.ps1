@@ -4,6 +4,7 @@ $url = "https://123static.szxiot.com/Soft/over_firewall/v2rayN-windows-64-deskto
 $zipPath = "$env:USERPROFILE\Downloads\v2rayN-windows-64-desktop.zip"
 $extractPath = $env:USERPROFILE
 $desktopPath = [Environment]::GetFolderPath("Desktop")
+$subscriptionUrl = "https://123static.szxiot.com/Soft/cat_sub/netch_sub.txt"
 
 function Install-Git {
     Write-Host "Git is not installed. Installing Git..." -ForegroundColor Yellow
@@ -70,6 +71,67 @@ function Get-CdpErrors($prog) {
     }
 }
 
+function Add-Subscription {
+    param (
+        [string]$folderPath,
+        [string]$subUrl
+    )
+
+    Write-Host "Downloading subscription from: $subUrl"
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $subContent = Invoke-WebRequest -Uri $subUrl -UseBasicParsing | Select-Object -ExpandProperty Content
+
+        if ([string]::IsNullOrWhiteSpace($subContent)) {
+            Write-Host "Warning: Subscription content is empty" -ForegroundColor Yellow
+            return $false
+        }
+
+        $v2rayNDataPath = Join-Path $env:APPDATA "v2rayN"
+        if (-not (Test-Path $v2rayNDataPath)) {
+            New-Item -ItemType Directory -Path $v2rayNDataPath -Force | Out-Null
+        }
+
+        $guiConfPath = Join-Path $v2rayNDataPath "guiConfs"
+        if (-not (Test-Path $guiConfPath)) {
+            New-Item -ItemType Directory -Path $guiConfPath -Force | Out-Null
+        }
+
+        $configPath = Join-Path $guiConfPath "user.json"
+        $subConfigPath = Join-Path $guiConfPath "subscription.json"
+
+        $subConfig = @{
+            subUrl = $subUrl
+            subRemarks = @{}
+            subTime = @{}
+        } | ConvertTo-Json -Depth 3
+
+        Set-Content -Path $subConfigPath -Value $subConfig -Encoding UTF8
+
+        $subDataPath = Join-Path $v2rayNDataPath "data"
+        if (-not (Test-Path $subDataPath)) {
+            New-Item -ItemType Directory -Path $subDataPath -Force | Out-Null
+        }
+
+        $subListPath = Join-Path $subDataPath "subscription"
+        if (-not (Test-Path $subListPath)) {
+            New-Item -ItemType Directory -Path $subListPath -Force | Out-Null
+        }
+
+        $subFileName = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($subUrl))
+        $subFileName = $subFileName -replace '[\\/:*?"<>|]', '_'
+        $subContentPath = Join-Path $subListPath "$subFileName.txt"
+
+        Set-Content -Path $subContentPath -Value $subContent -Encoding UTF8
+
+        Write-Host "Subscription configured successfully!" -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Host "Warning: Failed to configure subscription: $_" -ForegroundColor Yellow
+        return $false
+    }
+}
+
 $extractedFolder = Get-ChildItem -Path $extractPath -Directory | Where-Object { $_.Name -like "*v2rayN*" } | Select-Object -First 1
 
 if ($extractedFolder) {
@@ -84,8 +146,10 @@ if ($extractedFolder) {
         $needsShortcut = -not (Test-Path $shortcutPath)
 
         if (-not $needsShortcut) {
-            Write-Host "v2rayN is already configured!" -ForegroundColor Green
+            Write-Host "v2rayN is already configured with shortcut!" -ForegroundColor Green
             Write-Host "Location: $exePath"
+            Write-Host "Checking subscription status..."
+            Add-Subscription -folderPath $extractedFolder.FullName -subUrl $subscriptionUrl
             exit 0
         }
 
@@ -99,6 +163,9 @@ if ($extractedFolder) {
             $Shortcut.Save()
             Write-Host "Desktop shortcut created: $shortcutPath"
         }
+
+        Write-Host "Configuring subscription..."
+        Add-Subscription -folderPath $extractedFolder.FullName -subUrl $subscriptionUrl
 
         Write-Host "v2rayN configuration completed!" -ForegroundColor Green
         Write-Host "Location: $exePath"
@@ -134,6 +201,9 @@ if (Test-Path $zipPath) {
             $Shortcut.WorkingDirectory = (Get-Item $exePath).DirectoryName
             $Shortcut.Description = "v2rayN"
             $Shortcut.Save()
+
+            Write-Host "Configuring subscription..."
+            Add-Subscription -folderPath $extractedFolder.FullName -subUrl $subscriptionUrl
 
             Write-Host "v2rayN installed successfully!" -ForegroundColor Green
             Write-Host "Location: $exePath"
