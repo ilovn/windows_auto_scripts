@@ -80,7 +80,7 @@ if ($extractedFolder) {
     }
 
     if ($exePath) {
-        $settingsPath = Join-Path $extractedFolder.FullName "Settings"
+        $settingsPath = Join-Path $extractedFolder.FullName "Settings.ini"
         $shortcutPath = "$desktopPath\ProxifierPE.lnk"
 
         $needsLicense = $false
@@ -160,7 +160,7 @@ if (Test-Path $zipPath) {
 
         if ($exePath) {
             Write-Host "Adding license information to Settings file..."
-            $settingsPath = Join-Path $extractedFolder.FullName "Settings"
+            $settingsPath = Join-Path $extractedFolder.FullName "Settings.ini"
             $licenseContent = @"
 [License]
 Owner=User
