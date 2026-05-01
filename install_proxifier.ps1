@@ -8,29 +8,15 @@ $desktopPath = [Environment]::GetFolderPath("Desktop")
 function Install-Git {
     Write-Host "Git is not installed. Installing Git..." -ForegroundColor Yellow
 
-    $gitInstalled = $false
+    Write-Host "Downloading Git installer from internal source..."
+    $gitInstaller = "$env:TEMP\Git-Setup.exe"
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Invoke-WebRequest -Uri "https://123static.szxiot.com/Soft/git/Git-2.44.0-64-bit.exe" -OutFile $gitInstaller -UseBasicParsing
 
-    if (Get-Command winget -ErrorAction SilentlyContinue) {
-        Write-Host "Using winget to install Git..."
-        try {
-            $proc = Start-Process -FilePath "winget" -ArgumentList "install Git.Git --silent --accept-package-agreements --accept-source-agreements" -Wait -PassThru -NoNewWindow
-            if ($proc.ExitCode -eq 0) { $gitInstalled = $true }
-        } catch {
-            Write-Host "Winget installation failed, trying alternative method..." -ForegroundColor Yellow
-        }
-    }
+    Write-Host "Installing Git silently..."
+    Start-Process -FilePath $gitInstaller -ArgumentList "/VERYSILENT", "/NORESTART", "/NOCANCEL", "/SP-", "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS" -Wait -PassThru
 
-    if (-not $gitInstalled) {
-        Write-Host "Downloading Git installer from official source..."
-        $gitInstaller = "$env:TEMP\Git-Setup.exe"
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest -Uri "https://123static.szxiot.com/Soft/git/Git-2.44.0-64-bit.exe" -OutFile $gitInstaller -UseBasicParsing
-
-        Write-Host "Installing Git silently..."
-        Start-Process -FilePath $gitInstaller -ArgumentList "/VERYSILENT", "/NORESTART", "/NOCANCEL", "/SP-", "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS" -Wait -PassThru
-
-        Remove-Item $gitInstaller -Force -EA SilentlyContinue
-    }
+    Remove-Item $gitInstaller -Force -EA SilentlyContinue
 
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
     Start-Sleep -Seconds 3
