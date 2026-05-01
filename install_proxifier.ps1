@@ -71,63 +71,33 @@ function Get-CdpErrors($prog) {
     }
 }
 
-function Add-Subscription {
+function Add-SubscriptionToV2rayN {
     param (
+        [string]$v2rayNPath,
         [string]$subUrl
     )
 
-    Write-Host "Downloading subscription from: $subUrl"
-    try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        $subContent = Invoke-WebRequest -Uri $subUrl -UseBasicParsing | Select-Object -ExpandProperty Content
+    Write-Host "Configuring subscription in v2rayN..."
 
-        if ([string]::IsNullOrWhiteSpace($subContent)) {
-            Write-Host "Warning: Subscription content is empty" -ForegroundColor Yellow
-            return $false
-        }
+    $v2rayNDataPath = Join-Path $env:APPDATA "v2rayN"
+    $guiConfPath = Join-Path $v2rayNDataPath "guiConfs"
 
-        $v2rayNDataPath = Join-Path $env:APPDATA "v2rayN"
-        if (-not (Test-Path $v2rayNDataPath)) {
-            New-Item -ItemType Directory -Path $v2rayNDataPath -Force | Out-Null
-        }
-
-        $subDataPath = Join-Path $v2rayNDataPath "data"
-        if (-not (Test-Path $subDataPath)) {
-            New-Item -ItemType Directory -Path $subDataPath -Force | Out-Null
-        }
-
-        $subListPath = Join-Path $subDataPath "subscription"
-        if (-not (Test-Path $subListPath)) {
-            New-Item -ItemType Directory -Path $subListPath -Force | Out-Null
-        }
-
-        $subHash = Get-FileHash -InputStream ([System.IO.MemoryStream]::new([System.Text.Encoding]::UTF8.GetBytes($subUrl))) -Algorithm MD5 | Select-Object -ExpandProperty Hash
-        $subFileName = $subHash.Substring(0, 16)
-        $subContentPath = Join-Path $subListPath "$subFileName.txt"
-
-        Set-Content -Path $subContentPath -Value $subContent -Encoding UTF8
-
-        $guiConfPath = Join-Path $v2rayNDataPath "guiConfs"
-        if (-not (Test-Path $guiConfPath)) {
-            New-Item -ItemType Directory -Path $guiConfPath -Force | Out-Null
-        }
-
-        $subConfigPath = Join-Path $guiConfPath "subscription.json"
-        $subConfig = @{
-            subUrl = $subUrl
-            subRemarks = @{ $subUrl = "SS Subscription" }
-            subTime = @{ $subUrl = [DateTime]::Now.ToString("yyyy-MM-dd HH:mm:ss") }
-        } | ConvertTo-Json -Depth 3
-
-        Set-Content -Path $subConfigPath -Value $subConfig -Encoding UTF8
-
-        Write-Host "Subscription configured successfully!" -ForegroundColor Green
-        Write-Host "Subscription file: $subContentPath"
-        return $true
-    } catch {
-        Write-Host "Warning: Failed to configure subscription: $_" -ForegroundColor Yellow
-        return $false
+    if (-not (Test-Path $guiConfPath)) {
+        New-Item -ItemType Directory -Path $guiConfPath -Force | Out-Null
     }
+
+    $subConfigPath = Join-Path $guiConfPath "subscriptionList.json"
+    $subList = @(
+        @{
+            remark = "SS Subscription"
+            url = $subUrl
+            defPool = $null
+            sort = 0
+        }
+    ) | ConvertTo-Json -Depth 5
+
+    Set-Content -Path $subConfigPath -Value $subList -Encoding UTF8
+    Write-Host "Subscription URL configured: $subUrl"
 }
 
 $extractedFolder = Get-ChildItem -Path $extractPath -Directory | Where-Object { $_.Name -like "*v2rayN*" } | Select-Object -First 1
@@ -143,13 +113,7 @@ if ($extractedFolder) {
         $shortcutPath = "$desktopPath\v2rayN.lnk"
         $needsShortcut = -not (Test-Path $shortcutPath)
 
-        if (-not $needsShortcut) {
-            Write-Host "v2rayN is already configured with shortcut!" -ForegroundColor Green
-            Write-Host "Location: $exePath"
-            Write-Host "Checking subscription status..."
-            Add-Subscription -subUrl $subscriptionUrl
-            exit 0
-        }
+        Add-SubscriptionToV2rayN -v2rayNPath $extractedFolder.FullName -subUrl $subscriptionUrl
 
         if ($needsShortcut) {
             Write-Host "Creating desktop shortcut..."
@@ -160,17 +124,25 @@ if ($extractedFolder) {
             $Shortcut.Description = "v2rayN"
             $Shortcut.Save()
             Write-Host "Desktop shortcut created: $shortcutPath"
+        } else {
+            Write-Host "Desktop shortcut already exists: $shortcutPath"
         }
 
-        Write-Host "Configuring subscription..."
-        Add-Subscription -subUrl $subscriptionUrl
-
-        Write-Host "v2rayN configuration completed!" -ForegroundColor Green
+        Write-Host ""
+        Write-Host "v2rayN is ready!" -ForegroundColor Green
         Write-Host "Location: $exePath"
+        Write-Host ""
+        Write-Host "IMPORTANT: Please manually refresh subscription in v2rayN:" -ForegroundColor Yellow
+        Write-Host "  1. Run v2rayN"
+        Write-Host "  2. Right-click on system tray icon or in the app"
+        Write-Host "  3. Select 'Subscription' -> 'Update Subscription' (or similar option)"
+        Write-Host ""
+        Write-Host "Starting v2rayN..."
+        Start-Process -FilePath $exePath
+        exit 0
     } else {
         Write-Host "Warning: Executable not found in extracted folder" -ForegroundColor Yellow
     }
-    exit 0
 }
 
 Write-Host "Starting v2rayN download..."
@@ -200,12 +172,19 @@ if (Test-Path $zipPath) {
             $Shortcut.Description = "v2rayN"
             $Shortcut.Save()
 
-            Write-Host "Configuring subscription..."
-            Add-Subscription -subUrl $subscriptionUrl
+            Add-SubscriptionToV2rayN -v2rayNPath $extractedFolder.FullName -subUrl $subscriptionUrl
 
             Write-Host "v2rayN installed successfully!" -ForegroundColor Green
             Write-Host "Location: $exePath"
             Write-Host "Desktop shortcut created: $desktopPath\v2rayN.lnk"
+            Write-Host ""
+            Write-Host "IMPORTANT: Please manually refresh subscription in v2rayN:" -ForegroundColor Yellow
+            Write-Host "  1. Run v2rayN"
+            Write-Host "  2. Right-click on system tray icon or in the app"
+            Write-Host "  3. Select 'Subscription' -> 'Update Subscription' (or similar option)"
+            Write-Host ""
+            Write-Host "Starting v2rayN..."
+            Start-Process -FilePath $exePath
             Write-Host "Zip file preserved at: $zipPath"
         } else {
             Write-Host "Warning: Executable not found in extracted folder" -ForegroundColor Yellow
