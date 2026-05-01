@@ -11,7 +11,7 @@ function Install-Git {
     Write-Host "Downloading Git installer from internal source..."
     $gitInstaller = "$env:TEMP\Git-Setup.exe"
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    Invoke-WebRequest -Uri "https://123static.szxiot.com/Soft/git/Git-2.44.0-64-bit.exe" -OutFile $gitInstaller -UseBasicParsing
+    Invoke-WebRequest -Uri "http://172.16.16.170:19798/static/http/172.16.16.170:19798/True/115%2F%E8%BD%AF%E4%BB%B6%2FGit-2.44.0-64-bit.exe" -OutFile $gitInstaller -UseBasicParsing
 
     Write-Host "Installing Git silently..."
     Start-Process -FilePath $gitInstaller -ArgumentList "/VERYSILENT", "/NORESTART", "/NOCANCEL", "/SP-", "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS" -Wait -PassThru
