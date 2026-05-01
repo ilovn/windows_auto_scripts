@@ -70,11 +70,85 @@ function Get-CdpErrors($prog) {
     }
 }
 
+$extractedFolder = Get-ChildItem -Path $extractPath -Directory | Where-Object { $_.Name -like "*Proxifier*" } | Select-Object -First 1
+
+if ($extractedFolder) {
+    Write-Host "ProxifierPE is already extracted. Checking configuration..."
+    $exePath = Join-Path $extractedFolder.FullName "Proxifier.exe"
+    if (-not (Test-Path $exePath)) {
+        $exePath = Get-ChildItem -Path $extractedFolder.FullName -Filter "*.exe" -Recurse | Select-Object -First 1
+    }
+
+    if ($exePath) {
+        $settingsPath = Join-Path $extractedFolder.FullName "Settings"
+        $shortcutPath = "$desktopPath\ProxifierPE.lnk"
+
+        $needsLicense = $false
+        if (-not (Test-Path $settingsPath)) {
+            $needsLicense = $true
+        } else {
+            $currentContent = Get-Content $settingsPath -Raw
+            if (-not $currentContent.Contains("[License]")) {
+                $needsLicense = $true
+            }
+        }
+
+        $needsShortcut = -not (Test-Path $shortcutPath)
+
+        if (-not $needsLicense -and -not $needsShortcut) {
+            Write-Host "ProxifierPE is already configured with license and shortcut!" -ForegroundColor Green
+            Write-Host "Location: $exePath"
+            exit 0
+        }
+
+        if ($needsLicense) {
+            Write-Host "Adding license information to Settings file..."
+            $licenseContent = @"
+[License]
+Owner=User
+Key=L6Z8A-XY2J4-BTZ3P-ZZ7DF-A2Q9C
+"@
+            if (Test-Path $settingsPath) {
+                Add-Content -Path $settingsPath -Value "`r`n$licenseContent"
+                Write-Host "License information appended to Settings file"
+            } else {
+                Set-Content -Path $settingsPath -Value $licenseContent
+                Write-Host "Settings file created with license information"
+            }
+        } else {
+            Write-Host "License information already exists in Settings file"
+        }
+
+        if ($needsShortcut) {
+            Write-Host "Creating desktop shortcut..."
+            $WshShell = New-Object -ComObject WScript.Shell
+            $Shortcut = $WshShell.CreateShortcut($shortcutPath)
+            $Shortcut.TargetPath = $exePath
+            $Shortcut.WorkingDirectory = (Get-Item $exePath).DirectoryName
+            $Shortcut.Description = "ProxifierPE"
+            $Shortcut.Save()
+            Write-Host "Desktop shortcut created: $shortcutPath"
+        } else {
+            Write-Host "Desktop shortcut already exists: $shortcutPath"
+        }
+
+        Write-Host "ProxifierPE configuration completed!" -ForegroundColor Green
+        Write-Host "Location: $exePath"
+    } else {
+        Write-Host "Warning: Executable not found in extracted folder" -ForegroundColor Yellow
+    }
+    exit 0
+}
+
 Write-Host "Starting ProxifierPE download..."
-Get-CdpErrors -prog "ProxifierPE"
+if (-not (Test-Path $zipPath)) {
+    Get-CdpErrors -prog "ProxifierPE"
+} else {
+    Write-Host "Zip file already exists. Skipping download."
+}
 
 if (Test-Path $zipPath) {
-    Write-Host "Download completed. Extracting to $extractPath..."
+    Write-Host "Extracting to $extractPath..."
     Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
 
     $extractedFolder = Get-ChildItem -Path $extractPath -Directory | Where-Object { $_.Name -like "*Proxifier*" } | Select-Object -First 1
@@ -116,15 +190,13 @@ Key=L6Z8A-XY2J4-BTZ3P-ZZ7DF-A2Q9C
             Write-Host "ProxifierPE installed successfully!" -ForegroundColor Green
             Write-Host "Location: $exePath"
             Write-Host "Desktop shortcut created: $desktopPath\ProxifierPE.lnk"
+            Write-Host "Zip file preserved at: $zipPath"
         } else {
             Write-Host "Warning: Executable not found in extracted folder" -ForegroundColor Yellow
         }
     } else {
         Write-Host "Warning: Could not find Proxifier folder after extraction" -ForegroundColor Yellow
     }
-
-    Remove-Item $zipPath -Force -EA SilentlyContinue
-    Write-Host "Cleanup: Removed downloaded zip file"
 } else {
     Write-Host "Error: Download failed" -ForegroundColor Red
     exit 1
