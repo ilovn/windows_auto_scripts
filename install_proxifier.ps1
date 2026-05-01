@@ -73,7 +73,6 @@ function Get-CdpErrors($prog) {
 
 function Add-Subscription {
     param (
-        [string]$folderPath,
         [string]$subUrl
     )
 
@@ -92,22 +91,6 @@ function Add-Subscription {
             New-Item -ItemType Directory -Path $v2rayNDataPath -Force | Out-Null
         }
 
-        $guiConfPath = Join-Path $v2rayNDataPath "guiConfs"
-        if (-not (Test-Path $guiConfPath)) {
-            New-Item -ItemType Directory -Path $guiConfPath -Force | Out-Null
-        }
-
-        $configPath = Join-Path $guiConfPath "user.json"
-        $subConfigPath = Join-Path $guiConfPath "subscription.json"
-
-        $subConfig = @{
-            subUrl = $subUrl
-            subRemarks = @{}
-            subTime = @{}
-        } | ConvertTo-Json -Depth 3
-
-        Set-Content -Path $subConfigPath -Value $subConfig -Encoding UTF8
-
         $subDataPath = Join-Path $v2rayNDataPath "data"
         if (-not (Test-Path $subDataPath)) {
             New-Item -ItemType Directory -Path $subDataPath -Force | Out-Null
@@ -118,13 +101,28 @@ function Add-Subscription {
             New-Item -ItemType Directory -Path $subListPath -Force | Out-Null
         }
 
-        $subFileName = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($subUrl))
-        $subFileName = $subFileName -replace '[\\/:*?"<>|]', '_'
+        $subHash = Get-FileHash -InputStream ([System.IO.MemoryStream]::new([System.Text.Encoding]::UTF8.GetBytes($subUrl))) -Algorithm MD5 | Select-Object -ExpandProperty Hash
+        $subFileName = $subHash.Substring(0, 16)
         $subContentPath = Join-Path $subListPath "$subFileName.txt"
 
         Set-Content -Path $subContentPath -Value $subContent -Encoding UTF8
 
+        $guiConfPath = Join-Path $v2rayNDataPath "guiConfs"
+        if (-not (Test-Path $guiConfPath)) {
+            New-Item -ItemType Directory -Path $guiConfPath -Force | Out-Null
+        }
+
+        $subConfigPath = Join-Path $guiConfPath "subscription.json"
+        $subConfig = @{
+            subUrl = $subUrl
+            subRemarks = @{ $subUrl = "SS Subscription" }
+            subTime = @{ $subUrl = [DateTime]::Now.ToString("yyyy-MM-dd HH:mm:ss") }
+        } | ConvertTo-Json -Depth 3
+
+        Set-Content -Path $subConfigPath -Value $subConfig -Encoding UTF8
+
         Write-Host "Subscription configured successfully!" -ForegroundColor Green
+        Write-Host "Subscription file: $subContentPath"
         return $true
     } catch {
         Write-Host "Warning: Failed to configure subscription: $_" -ForegroundColor Yellow
@@ -149,7 +147,7 @@ if ($extractedFolder) {
             Write-Host "v2rayN is already configured with shortcut!" -ForegroundColor Green
             Write-Host "Location: $exePath"
             Write-Host "Checking subscription status..."
-            Add-Subscription -folderPath $extractedFolder.FullName -subUrl $subscriptionUrl
+            Add-Subscription -subUrl $subscriptionUrl
             exit 0
         }
 
@@ -165,7 +163,7 @@ if ($extractedFolder) {
         }
 
         Write-Host "Configuring subscription..."
-        Add-Subscription -folderPath $extractedFolder.FullName -subUrl $subscriptionUrl
+        Add-Subscription -subUrl $subscriptionUrl
 
         Write-Host "v2rayN configuration completed!" -ForegroundColor Green
         Write-Host "Location: $exePath"
@@ -203,7 +201,7 @@ if (Test-Path $zipPath) {
             $Shortcut.Save()
 
             Write-Host "Configuring subscription..."
-            Add-Subscription -folderPath $extractedFolder.FullName -subUrl $subscriptionUrl
+            Add-Subscription -subUrl $subscriptionUrl
 
             Write-Host "v2rayN installed successfully!" -ForegroundColor Green
             Write-Host "Location: $exePath"
