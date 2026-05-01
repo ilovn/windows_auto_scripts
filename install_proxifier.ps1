@@ -4,7 +4,6 @@ $url = "https://123static.szxiot.com/Soft/over_firewall/v2rayN-windows-64-deskto
 $zipPath = "$env:USERPROFILE\Downloads\v2rayN-windows-64-desktop.zip"
 $extractPath = $env:USERPROFILE
 $desktopPath = [Environment]::GetFolderPath("Desktop")
-$subscriptionUrl = "https://123static.szxiot.com/Soft/cat_sub/netch_sub.txt"
 
 function Install-Git {
     Write-Host "Git is not installed. Installing Git..." -ForegroundColor Yellow
@@ -71,35 +70,6 @@ function Get-CdpErrors($prog) {
     }
 }
 
-function Add-SubscriptionToV2rayN {
-    param (
-        [string]$v2rayNPath,
-        [string]$subUrl
-    )
-
-    Write-Host "Configuring subscription in v2rayN..."
-
-    $v2rayNDataPath = Join-Path $env:APPDATA "v2rayN"
-    $guiConfPath = Join-Path $v2rayNDataPath "guiConfs"
-
-    if (-not (Test-Path $guiConfPath)) {
-        New-Item -ItemType Directory -Path $guiConfPath -Force | Out-Null
-    }
-
-    $subConfigPath = Join-Path $guiConfPath "subscriptionList.json"
-    $subList = @(
-        @{
-            remark = "SS Subscription"
-            url = $subUrl
-            defPool = $null
-            sort = 0
-        }
-    ) | ConvertTo-Json -Depth 5
-
-    Set-Content -Path $subConfigPath -Value $subList -Encoding UTF8
-    Write-Host "Subscription URL configured: $subUrl"
-}
-
 $extractedFolder = Get-ChildItem -Path $extractPath -Directory | Where-Object { $_.Name -like "*v2rayN*" } | Select-Object -First 1
 
 if ($extractedFolder) {
@@ -113,7 +83,18 @@ if ($extractedFolder) {
         $shortcutPath = "$desktopPath\v2rayN.lnk"
         $needsShortcut = -not (Test-Path $shortcutPath)
 
-        Add-SubscriptionToV2rayN -v2rayNPath $extractedFolder.FullName -subUrl $subscriptionUrl
+        if (-not $needsShortcut) {
+            Write-Host "v2rayN is already configured!" -ForegroundColor Green
+            Write-Host "Location: $exePath"
+            Write-Host ""
+            Write-Host "To add subscription, run v2rayN and:" -ForegroundColor Yellow
+            Write-Host "  1. Click 'Subscription' menu"
+            Write-Host "  2. Select 'Subscription Settings'"
+            Write-Host "  3. Paste your subscription URL"
+            Write-Host "  4. Click 'OK'"
+            Write-Host "  5. Then 'Update Subscription'"
+            exit 0
+        }
 
         if ($needsShortcut) {
             Write-Host "Creating desktop shortcut..."
@@ -124,25 +105,21 @@ if ($extractedFolder) {
             $Shortcut.Description = "v2rayN"
             $Shortcut.Save()
             Write-Host "Desktop shortcut created: $shortcutPath"
-        } else {
-            Write-Host "Desktop shortcut already exists: $shortcutPath"
         }
 
-        Write-Host ""
         Write-Host "v2rayN is ready!" -ForegroundColor Green
         Write-Host "Location: $exePath"
         Write-Host ""
-        Write-Host "IMPORTANT: Please manually refresh subscription in v2rayN:" -ForegroundColor Yellow
-        Write-Host "  1. Run v2rayN"
-        Write-Host "  2. Right-click on system tray icon or in the app"
-        Write-Host "  3. Select 'Subscription' -> 'Update Subscription' (or similar option)"
-        Write-Host ""
-        Write-Host "Starting v2rayN..."
-        Start-Process -FilePath $exePath
-        exit 0
+        Write-Host "To add subscription, run v2rayN and:" -ForegroundColor Yellow
+        Write-Host "  1. Click 'Subscription' menu"
+        Write-Host "  2. Select 'Subscription Settings'"
+        Write-Host "  3. Paste your subscription URL"
+        Write-Host "  4. Click 'OK'"
+        Write-Host "  5. Then 'Update Subscription'"
     } else {
         Write-Host "Warning: Executable not found in extracted folder" -ForegroundColor Yellow
     }
+    exit 0
 }
 
 Write-Host "Starting v2rayN download..."
@@ -172,19 +149,17 @@ if (Test-Path $zipPath) {
             $Shortcut.Description = "v2rayN"
             $Shortcut.Save()
 
-            Add-SubscriptionToV2rayN -v2rayNPath $extractedFolder.FullName -subUrl $subscriptionUrl
-
             Write-Host "v2rayN installed successfully!" -ForegroundColor Green
             Write-Host "Location: $exePath"
             Write-Host "Desktop shortcut created: $desktopPath\v2rayN.lnk"
             Write-Host ""
-            Write-Host "IMPORTANT: Please manually refresh subscription in v2rayN:" -ForegroundColor Yellow
-            Write-Host "  1. Run v2rayN"
-            Write-Host "  2. Right-click on system tray icon or in the app"
-            Write-Host "  3. Select 'Subscription' -> 'Update Subscription' (or similar option)"
+            Write-Host "To add subscription, run v2rayN and:" -ForegroundColor Yellow
+            Write-Host "  1. Click 'Subscription' menu"
+            Write-Host "  2. Select 'Subscription Settings'"
+            Write-Host "  3. Paste your subscription URL"
+            Write-Host "  4. Click 'OK'"
+            Write-Host "  5. Then 'Update Subscription'"
             Write-Host ""
-            Write-Host "Starting v2rayN..."
-            Start-Process -FilePath $exePath
             Write-Host "Zip file preserved at: $zipPath"
         } else {
             Write-Host "Warning: Executable not found in extracted folder" -ForegroundColor Yellow
