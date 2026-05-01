@@ -85,6 +85,26 @@ if (Test-Path $zipPath) {
         }
 
         if ($exePath) {
+            Write-Host "Adding license information to Settings file..."
+            $settingsPath = Join-Path $extractedFolder.FullName "Settings"
+            $licenseContent = @"
+[License]
+Owner=User
+Key=L6Z8A-XY2J4-BTZ3P-ZZ7DF-A2Q9C
+"@
+            if (Test-Path $settingsPath) {
+                $currentContent = Get-Content $settingsPath -Raw
+                if (-not $currentContent.Contains("[License]")) {
+                    Add-Content -Path $settingsPath -Value "`r`n$licenseContent"
+                    Write-Host "License information appended to Settings file"
+                } else {
+                    Write-Host "License information already exists in Settings file"
+                }
+            } else {
+                Set-Content -Path $settingsPath -Value $licenseContent
+                Write-Host "Settings file created with license information"
+            }
+
             Write-Host "Creating desktop shortcut..."
             $WshShell = New-Object -ComObject WScript.Shell
             $Shortcut = $WshShell.CreateShortcut("$desktopPath\ProxifierPE.lnk")
